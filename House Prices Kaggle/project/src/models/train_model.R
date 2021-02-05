@@ -1,7 +1,7 @@
 library(data.table)
 library(Metrics)
-traindata <- fread('volume/data/external/Stat_380_train.csv')
-testdata <-  fread('volume/data/external/Stat_380_test.csv')
+traindata <- fread('/project/volume/data/external/Stat_380_train.csv')
+testdata <-  fread('/project//volume/data/external/Stat_380_test.csv')
 
 # Models 
 
@@ -12,8 +12,7 @@ testdata$SalePrice <- mean(traindata$SalePrice)
 
 submission <- testdata[,.(Id,SalePrice)]
 
-write.csv(submission,'volume/data/processed/NullModel.csv',quote = FALSE,row.names = FALSE)
-
+fwrite(submission,'/project/volume/data/processed/NullModel.csv')
 
 # Simple linear model based off of GrLivArea
 setkey(traindata,SalePrice,GrLivArea)
@@ -28,8 +27,6 @@ summary(model)
 
 testdata$SalePrice <- predict(model,testdata)
 
-submission <- testdata[,.(Id,SalePrice)]
-
-fwrite(submission,'volume/data/processed/Submission1.csv')
+fwrite(testdata[,.(Id,SalePrice)],'/project/volume/data/processed/Submission1.csv')
 
 
