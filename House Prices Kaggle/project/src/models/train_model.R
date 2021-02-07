@@ -6,10 +6,10 @@ testdata <-  fread('./project//volume/data/interim/test.csv')
 
 
 
-model <- lm(SalePrice ~ .,data=traindata)
+model <- lm(SalePrice ~ .,data=traindata[ ,`:=`(Id = NULL)])
 
 summary(model)
 
 testdata$SalePrice <- predict(model,testdata)
 
-fwrite(testdata[,.(Id,SalePrice)],'./project//volume/data/processed/Submission2.csv')
+fwrite(testdata[,.(Id,SalePrice)],'./project//volume/data/processed/Submission3.csv')
