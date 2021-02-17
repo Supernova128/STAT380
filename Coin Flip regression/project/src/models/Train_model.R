@@ -1,17 +1,15 @@
-library('tidyverse')
+library('data.table')
 
-train <- read.csv('project/volume/data/raw/train_file.csv')
-test <- read.csv('project/volume/data/raw/test_file.csv')
+train <- fread('project/volume/data/interim/train.csv')
+test <- fread('project/volume/data/interim/test.csv')
 
 
-model <- train %>%
-  group_by(V1,V2,V3,V4,V5,V6,V7,V8,V9,V10) %>%
-  summarise(result = sum(result)/n()) %>%
-  distinct()
+model <- glm(result ~ total,family = binomial,data = train)
 
-answers<- 
-  test %>%
-  left_join(model) %>%
-  select(id,result)
+saveRDS(model,"./project/volume/models/Coin.model")
 
-write_csv(answers,'project/volume/data/processed/Submission1.csv')
+test$result <- predict(model,newdata = test, type = "response")
+
+answers <- test[,.(id,result)]
+
+fwrite(answers,'project/volume/data/processed/Submission3.csv')
