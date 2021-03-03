@@ -1,6 +1,4 @@
 library("data.table")
-library("ISLR")
-
 
 test <- fread('project/volume/data/raw/test_file.csv')
 

@@ -3,6 +3,7 @@ library('data.table')
 train <- fread('project/volume/data/interim/train.csv')
 test <- fread('project/volume/data/interim/test.csv')
 
+# Data based distribution
 
 model <- glm(result ~ total,family = binomial,data = train)
 
@@ -15,6 +16,11 @@ answers <- test[,.(id,result)]
 fwrite(answers,'project/volume/data/processed/Submission3.csv')
 
 rm(model,test,train,answers)
+
+
+
+
+
 
 # Theoretical distribution 
 

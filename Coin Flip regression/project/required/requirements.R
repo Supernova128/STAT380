@@ -1,5 +1,1 @@
 install.packages("data.table")
-install.packages("ISLR")
-install.packages("caret")
-install.packages("Metrics")
-install.packages('tidyverse')
