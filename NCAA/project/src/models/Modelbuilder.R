@@ -14,7 +14,7 @@ train <- train[,Result:= NULL]
 
 x = as.matrix(train)
 
-model<- glmnet(x,y,family = "binomial",alpha = 0.01)
+model<- glmnet(x,y,family = "binomial",alpha = 0)
 
 plot(model)
 
@@ -24,7 +24,6 @@ fit = min(model$lambda)
 
 test <- fread("project/volume/data/interim/test3.csv")
 
-  
 test$Result <- predict(model,newx = test.bm,s = fit, type = "response")
 
 test[, id := paste(Team1,"_",Team2,sep = "")]
@@ -33,4 +32,4 @@ test <- test[, .(id,Result)]
 
 mean(test$Result)
 
-fwrite(test,"project/volume/data/processed/Submission2.csv")
+fwrite(test,"project/volume/data/processed/Submission3.csv")
