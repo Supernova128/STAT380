@@ -30,15 +30,18 @@ setnames(Wteam,winning,winning2)
 
 setnames(Lteam,losing,losing2)
 
-master_stats <- rbind(Wteam,Lteam)
-
-rm(n,losing,losing2,winning,range,winning2,Wteam,Lteam)
-
-# Loop for stats by day
-
 `%notin%` <- Negate(`%in%`)
 
 stats = names(Lteam)[names(Lteam) %notin%  c("Season","DayNum","TeamID")]
+
+master_stats <- rbind(Wteam,Lteam)
+
+rm(n,losing,losing2,winning,range,winning2,Lteam,Wteam,`%notin%`)
+
+# Loop for stats by day
+
+
+
 
 stats_by_day<-NULL
 
@@ -51,7 +54,9 @@ for (i in 1:max(master_stats$DayNum)){
   team_stats_by_day$DayNum <- i
   stats_by_day<-rbind(stats_by_day,team_stats_by_day)
 }
+
 rm(sub_master_stats,team_stats_by_day,i)
+
 stats_by_day$DayNum <- stats_by_day$DayNum + 1
 
 train <- train[, c("Season","DayNum","WTeamID","LTeamID")]
@@ -68,10 +73,16 @@ getdiff <- function(season,Daynum,WTeamID,LTeamID){
 
 temp <- t(mapply(getdiff,season = train$Season,Daynum = train$DayNum, WTeamID = train$WTeamID, LTeamID = train$LTeamID))
 
-train <- cbind(train,temp)
+strain <- cbind(train,temp)
 
-train <- na.omit(train)
+strain <- na.omit(strain)
 
 temp <- t(mapply(getdiff,season = test$Season,Daynum = test$DayNum, WTeamID = test$Team1, LTeamID = test$Team2))
 
-test <- cbind(test,temp)
+stest <- cbind(test,temp)
+
+fwrite(stest, file = "project/volume/data/interim/teamstattest.csv")
+fwrite(strain, file = "project/volume/data/interim/teamstattrain.csv")
+
+rm(master_stats,stats_by_day,stest,strain,temp,stats,getdiff)
+

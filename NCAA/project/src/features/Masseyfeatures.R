@@ -20,8 +20,10 @@ setkey(Massey, Season,RankingDayNum, TeamID)
 # Recast the data
 
 Masseycasted <- dcast(Massey,  Season + RankingDayNum + TeamID ~ SystemName,value.var = "OrdinalRank")
+rankings = c("POM","PIG","SAG","MOR","DOK")
+keep = c(c("Season", "RankingDayNum", "TeamID",rankings))
 
-# Clean column names for mice
+Masseycasted <- Masseycasted[,keep,with=F]
 
 setnames(Masseycasted,make.names(colnames(Masseycasted)))
 
@@ -29,120 +31,33 @@ rm(Massey)
 
 # Add Massy data to training and testing data sets
 
-# Function needed
-Lastnotnull <- function(vector) {
-  for (i in length(vector):1){
-    if (!is.null(vector[i])){
-      return(vector[i])
-    }
-  }
-  return(NULL)
-}
-
-# Test Set new row
-
-test[,Rollday := DayNum]
-
 # Set keys 
 setkey(Masseycasted,Season,TeamID,RankingDayNum)
 
 # Rolling Join
 
-setkey(test, Season,Team1,Rollday)
+getdiff <- function(season,Daynum,WTeamID,LTeamID){
+  vec1 = unlist(Masseycasted[Season == season & RankingDayNum < Daynum & TeamID == WTeamID,rankings,with=F][, lapply(.SD, function(x) tail(x[!is.na(x)],1))])
+  vec2 = unlist(Masseycasted[Season == season & RankingDayNum < Daynum & TeamID == LTeamID,rankings,with=F][, lapply(.SD, function(x) tail(x[!is.na(x)],1))])
+  if(length(vec1) == 0 | length(vec2) == 0){
+    return(setNames(rep(NA,length(rankings)),rankings))
+  }
+  return(vec1-vec2)
+}
 
-Team1T <- test[Masseycasted,nomatch = 0,roll = -Inf]
+temp <- t(mapply(getdiff,season = test$Season,Daynum = test$DayNum, WTeamID = test$Team1, LTeamID = test$Team2))
 
-rankings <- names(Team1T)[-1:-5]
+mtest <- cbind(test,temp)
 
-# Save most recent data for each team
+temp <- t(mapply(getdiff,season = train$Season,Daynum = train$DayNum, WTeamID = train$WTeamID, LTeamID = train$LTeamID))
 
-Team1T <- Team1T[, lapply(.SD,Lastnotnull), by = c("Season","Team1","Team2","DayNum"),.SDcols = rankings]
+mtrain <- cbind(train,temp)
 
-setkey(test, Season,Team2,Rollday)
+mtrain <- na.omit(mtrain)
 
-Team2T <- test[Masseycasted,nomatch = 0, roll = -Inf]
+fwrite(mtest,"project/volume/data/interim/Masseytest.csv")
 
-rankings <- names(Team2T)[-1:-5]
+fwrite(mtrain,"project/volume/data/interim/Masseytrain.csv")
 
-Team2T <- Team2T[, lapply(.SD,Lastnotnull), by = c("Season","Team1","Team2","DayNum"),.SDcols = rankings]
-
-
-# Merge the 2 data tables together
-
-test <- Team1T[Team2T, 
-                on = c("Season","Team1","Team2","DayNum"),
-                nomatch = 0,
-                lapply(
-                  setNames(rankings, rankings),
-                  function(x) get(x) - get(paste0("i.", x))
-                ),
-                by = .EACHI]
-
-rm(Team1T,Team2T)
-
-# Train set
-
-train[, RollDay := DayNum - 1]
-
-setkey(train, Season,WTeamID,RollDay)
-
-trainW <- train[Masseycasted,nomatch = 0, roll = T]
-
-trainW <- trainW[, lapply(.SD,Lastnotnull), by = c("Season","WTeamID","LTeamID","DayNum"),.SDcols = rankings]
-
-setkey(train, Season,LTeamID,RollDay)
-
-trainL <- train[Masseycasted,nomatch = 0, roll = -Inf]
-
-trainL <- trainL[, lapply(.SD,Lastnotnull), by = c("Season","WTeamID","LTeamID","DayNum"),.SDcols = rankings]
-
-
-train1 <- trainW[trainL, 
-               on = c("Season","WTeamID","LTeamID","DayNum"),
-               nomatch = 0,
-               lapply(
-                 setNames(rankings, rankings),
-                 function(x) get(x) - get(paste0("i.", x))
-               ),
-               by = .EACHI]
-
-
-setnames(train1,c("WTeamID","LTeamID"),c("Team1","Team2"))
-
-train1$Result = 1
-
-train2 <- trainW[trainL, 
-                 on = c("Season","WTeamID","LTeamID","DayNum"),
-                 nomatch = 0,
-                 lapply(
-                   setNames(rankings, rankings),
-                   function(x) get(paste0("i.", x)) - get(x)
-                 ),
-                 by = .EACHI]
-
-setnames(train2,c("WTeamID","LTeamID"),c("Team2","Team1"))
-
-train2$Result = 0
-
-train <- rbind(train1,train2)
-
-rm(train1,train2,trainL,trainW)
-
-# Remove rankings in the test set with any NAs
-
-test <- test[,which(unlist(lapply(test, function(x)!any(is.na(x))))),with=FALSE]
-
-keep = c(names(test),"Result")
-
-train <- train[, ..keep]
-
-train <- na.omit(train)
-
-fwrite(test,"project/volume/data/interim/test4.csv")
-
-fwrite(train,"project/volume/data/interim/train4.csv")
-
-fwrite(list(names(test)),"project/volume/data/interim/rankingkeep.csv")
-
-
+rm(Masseycasted,mtest,mtrain,temp,keep,rankings,getdiff)
 
