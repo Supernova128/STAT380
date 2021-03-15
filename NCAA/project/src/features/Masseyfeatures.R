@@ -1,17 +1,6 @@
 library(data.table)
 library(caret)
-
-
-
-# Read in Raw data 
-
-#Season <- fread("project/volume/data/external/Stage2DataFiles/RegularSeasonDetailedResults.csv")
-#Tourney <- fread("project/volume/data/external/Stage2DataFiles/NCAATourneyDetailedResults.csv")
-Conference <- fread("project/volume/data/external/Stage2DataFiles/ConferenceTourneyGames.csv")
-Massey <- fread("project/volume/data/external/MasseyOrdinals_thru_2019_day_128/MasseyOrdinals_thru_2019_day_128.csv")
-#Teams <- fread("project/volume/data/external/Stage2DataFiles/Teams.csv")
-Example <- fread("project/volume/data/external/examp_sub.csv")
-
+set.seed(4765)
 # Code for the example submission from google
 
 # test <- Example[,c("Season","Team1","Team2","ID") := list(
@@ -20,23 +9,7 @@ Example <- fread("project/volume/data/external/examp_sub.csv")
 #   as.numeric(gsub("^[^_]*_[^_]*_","",ID)),
 #   gsub("^[^_]*_","",ID))]
 
-# Test data set
-
-test <- Example[,c("id","Season","Team1","Team2","DayNum","Result") := list(
-  NULL,
-  2019,
-  as.numeric(gsub("_[^_]*$","",id)),
-  as.numeric(gsub("^[^_]*_","",id)),
-  128,
-  NULL)]
-
-rm(Example)
-
-# Train data set 
-
-train <- Conference[,ConfAbbrev := NULL]
-
-rm(Conference)
+# Filter Massey rankings 
 
 # Adding latest Massey data to data sets
 
@@ -44,12 +17,13 @@ rm(Conference)
 
 setkey(Massey, Season,RankingDayNum, TeamID)
 
-
-# Remove forward looking data
-
 # Recast the data
 
 Masseycasted <- dcast(Massey,  Season + RankingDayNum + TeamID ~ SystemName,value.var = "OrdinalRank")
+
+# Clean column names for mice
+
+setnames(Masseycasted,make.names(colnames(Masseycasted)))
 
 rm(Massey)
 
@@ -108,11 +82,11 @@ rm(Team1T,Team2T)
 
 # Train set
 
-train[, RollDay := DayNum]
+train[, RollDay := DayNum - 1]
 
 setkey(train, Season,WTeamID,RollDay)
 
-trainW <- train[Masseycasted,nomatch = 0, roll = -Inf]
+trainW <- train[Masseycasted,nomatch = 0, roll = T]
 
 trainW <- trainW[, lapply(.SD,Lastnotnull), by = c("Season","WTeamID","LTeamID","DayNum"),.SDcols = rankings]
 
@@ -154,6 +128,8 @@ train <- rbind(train1,train2)
 
 rm(train1,train2,trainL,trainW)
 
+# Remove rankings in the test set with any NAs
+
 test <- test[,which(unlist(lapply(test, function(x)!any(is.na(x))))),with=FALSE]
 
 keep = c(names(test),"Result")
@@ -162,9 +138,9 @@ train <- train[, ..keep]
 
 train <- na.omit(train)
 
-fwrite(test,"project/volume/data/interim/test3.csv")
+fwrite(test,"project/volume/data/interim/test4.csv")
 
-fwrite(train,"project/volume/data/interim/train3.csv")
+fwrite(train,"project/volume/data/interim/train4.csv")
 
 fwrite(list(names(test)),"project/volume/data/interim/rankingkeep.csv")
 

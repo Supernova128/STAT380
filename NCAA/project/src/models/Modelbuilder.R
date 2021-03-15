@@ -1,7 +1,7 @@
 library(glmnet)
 library(data.table)
 
-set.seed(321)
+set.seed(4765)
 
 train <- fread("project/volume/data/interim/train3.csv")
 test <- fread("project/volume/data/interim/test3.csv")
