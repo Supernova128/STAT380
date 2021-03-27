@@ -3,33 +3,45 @@ library(data.table)
 
 set.seed(4765)
 
-train <- fread("project/volume/data/interim/train3.csv")
-test <- fread("project/volume/data/interim/test3.csv")
+train <- fread("project/volume/data/interim/train_Complete")
+test <- fread("project/volume/data/interim/test_Complete")
 
 train <- train[,c("Season","Team1","Team2","DayNum"):= c(NULL,NULL,NULL,NULL)]
 
-y = train$Result
+y = train[,result]
 
-train <- train[,Result:= NULL]
+train <- train[,result:= NULL]
 
 x = as.matrix(train)
 
-model<- glmnet(x,y,family = "binomial",alpha = 0)
-
-plot(model)
+modelR <- glmnet(x,y,family = "binomial",alpha = 0)
+saveRDS(modelR,"project/volume/models/RidgeModel.rds")
+modelL <- glmnet(x,y,family = "binomial",alpha = 1)
+saveRDS(modelL,"project/volume/models/LassoModel.rds")
 
 test.bm = as.matrix(test[,c("Season","Team1","Team2","DayNum"):= c(NULL,NULL,NULL,NULL)])
 
-fit = min(model$lambda)
+fitR = min(modelR$lambda)
 
-test <- fread("project/volume/data/interim/test3.csv")
+fitL = min(modelL$lambda)
 
-test$Result <- predict(model,newx = test.bm,s = fit, type = "response")
+testR <- fread("project/volume/data/interim/test_Complete")
 
-test[, id := paste(Team1,"_",Team2,sep = "")]
+testL <- fread("project/volume/data/interim/test_Complete")
 
-test <- test[, .(id,Result)]
+testR[,Pred := predict(modelR,newx = test.bm,s = fitR, type = "response")]
 
-mean(test$Result)
+testL[,Pred := predict(modelL,newx = test.bm,s = fitL, type = "response")]
 
-fwrite(test,"project/volume/data/processed/Submission3.csv")
+
+testR[, id := paste(Season,"_",Team1,"_",Team2,sep = "")]
+
+testL[, id := paste(Season,"_",Team1,"_",Team2,sep = "")]
+
+testR <- testR[, .(id,Pred)]
+
+testL <- testL[, .(id,Pred)]
+
+fwrite(testR,"project/volume/data/processed/SubmissionRidge.csv")
+fwrite(testL,"project/volume/data/processed/SubmissionLasso.csv")
+

@@ -1,13 +1,6 @@
 library(data.table)
 library(caret)
 set.seed(4765)
-# Code for the example submission from google
-
-# test <- Example[,c("Season","Team1","Team2","ID") := list(
-#   as.numeric(gsub("_[^_]*_[^_]*$","",ID)),
-#   as.numeric(gsub("^[^_]*_|_[^_]*$","",ID)),
-#   as.numeric(gsub("^[^_]*_[^_]*_","",ID)),
-#   gsub("^[^_]*_","",ID))]
 
 # Filter Massey rankings 
 
@@ -18,9 +11,11 @@ set.seed(4765)
 setkey(Massey, Season,RankingDayNum, TeamID)
 
 # Recast the data
+rankings = c("POM","WLK","SAG","MOR","DOK")
+Massey <- Massey[SystemName %in% rankings]
 
 Masseycasted <- dcast(Massey,  Season + RankingDayNum + TeamID ~ SystemName,value.var = "OrdinalRank")
-rankings = c("POM","PIG","SAG","MOR","DOK")
+
 keep = c(c("Season", "RankingDayNum", "TeamID",rankings))
 
 Masseycasted <- Masseycasted[,keep,with=F]

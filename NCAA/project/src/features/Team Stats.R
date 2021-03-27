@@ -4,6 +4,8 @@ set.seed(4765)
 
 # Get variable names needed
 
+# Mutate Net Score
+
 n = names(train)
 
 winning = c("Season","DayNum",n[substr(n,1,1) == "W"])
@@ -11,6 +13,8 @@ winning = c("Season","DayNum",n[substr(n,1,1) == "W"])
 winning = winning[winning != "WLoc"]
 
 losing = c("Season","DayNum",n[substr(n,1,1) == "L"])
+
+# Mutate Percentage
 
 # Filter data sets
 
@@ -30,18 +34,15 @@ setnames(Wteam,winning,winning2)
 
 setnames(Lteam,losing,losing2)
 
-`%notin%` <- Negate(`%in%`)
-
-stats = names(Lteam)[names(Lteam) %notin%  c("Season","DayNum","TeamID")]
-
 master_stats <- rbind(Wteam,Lteam)
 
-rm(n,losing,losing2,winning,range,winning2,Lteam,Wteam,`%notin%`)
+rm(n,losing,losing2,winning,range,winning2,Lteam,Wteam)
+
+# Mutate percentage 
+
+stats = names(master_stats)[-1:-3]
 
 # Loop for stats by day
-
-
-
 
 stats_by_day<-NULL
 
@@ -57,7 +58,11 @@ for (i in 1:max(master_stats$DayNum)){
 
 rm(sub_master_stats,team_stats_by_day,i)
 
+# Prevent Leaks
+
 stats_by_day$DayNum <- stats_by_day$DayNum + 1
+
+setkey(stats_by_day,Season,DayNum,TeamID,TeamID)
 
 train <- train[, c("Season","DayNum","WTeamID","LTeamID")]
 
@@ -80,6 +85,7 @@ strain <- na.omit(strain)
 temp <- t(mapply(getdiff,season = test$Season,Daynum = test$DayNum, WTeamID = test$Team1, LTeamID = test$Team2))
 
 stest <- cbind(test,temp)
+
 
 fwrite(stest, file = "project/volume/data/interim/teamstattest.csv")
 fwrite(strain, file = "project/volume/data/interim/teamstattrain.csv")

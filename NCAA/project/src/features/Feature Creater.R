@@ -2,27 +2,30 @@ library(data.table)
 set.seed(4765)
 
 # Train set
-Season <- fread("project/volume/data/external/Stage2DataFiles/RegularSeasonDetailedResults.csv")
-Tourney <- fread("project/volume/data/external/Stage2DataFiles/NCAATourneyDetailedResults.csv")
+Season <- fread("project/volume/data/external/MDataFiles_Stage2/MRegularSeasonDetailedResults.csv")
+Tourney <- fread("project/volume/data/external/MDataFiles_Stage2/MNCAATourneyDetailedResults.csv")
 train <- rbind(Season,Tourney)
 rm(Season,Tourney)
 
 # Testing set
-test <- fread("project/volume/data/external/examp_sub.csv")
-test <- test[,c("id","Season","Team1","Team2","DayNum","Result") := list(
+test <- fread("project/volume/data/external/MDataFiles_Stage2/MSampleSubmissionStage2.csv")
+test <- test[,c("ID","Season","Team1","Team2","Pred") := list(
   NULL,
-  2019,
-  as.numeric(gsub("_[^_]*$","",id)),
-  as.numeric(gsub("^[^_]*_","",id)),
-  131,
+  as.numeric(gsub("_[^_]*_[^_]*$","",ID)),
+  as.numeric(gsub("^[^_]*_|_[^_]*$","",ID)),
+  as.numeric(gsub("^[^_]*_[^_]*_","",ID)),
   NULL)]
+
+test$DayNum <- max(train[Season %in% test$Season]$DayNum) + 1
+
 
 # Team stats 
 
 source(file = "project/src/features/Team Stats.R")
 # Massey stats 
 
-Massey <- fread("project/volume/data/external/MasseyOrdinals_thru_2019_day_128/MasseyOrdinals_thru_2019_day_128.csv")
+Massey <- fread("project/volume/data/external/MDataFiles_Stage2/MMasseyOrdinals.csv")
+train <- train[,c("Season","WTeamID","LTeamID","DayNum")]
 source(file = "project/src/features/Masseyfeatures.R")
 
 rm(test,train)
