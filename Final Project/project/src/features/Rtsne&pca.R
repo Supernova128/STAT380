@@ -1,6 +1,8 @@
 library(data.table)
 library(ClusterR)
 library(Rtsne)
+library(xgboost)
+
 
 # Load data
 
@@ -36,7 +38,7 @@ train[,value := NULL]
 
 # save Y values and null it out
 
-train.y <- train$variable
+subreddits <- train$variable
 
 train[,variable := NULL]
 
@@ -59,7 +61,7 @@ train <- pca.dt[1:nrow(train)]
 
 # Bind subreddits to train 
 
-train <- cbind(train,train.y)
+train <- cbind(train,subreddits)
 
 # Save data 
 
