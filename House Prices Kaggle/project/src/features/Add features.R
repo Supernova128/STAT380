@@ -1,6 +1,9 @@
 library(data.table)
 library(Metrics)
 library(caret)
+library(xgboost)
+
+
 traindata <- fread('./project/volume/data/external/Stat_380_train.csv')
 testdata <-  fread('./project/volume/data/external/Stat_380_test.csv')
 # Save saleprice data 
@@ -11,22 +14,28 @@ traindata_y <- traindata$SalePrice
 
 testdata$SalePrice <- mean(traindata_y)
 
-# Changes NAs to 0
-
-traindata[is.na(traindata)] <- 0
-
-testdata[is.na(testdata)] <- 0
+# Dummy Vars
 
 dummies <- dummyVars(SalePrice ~ ., data = traindata)
 
 traindata <- data.table(predict(dummies, newdata = traindata))
 
-traindata$SalePrice <- traindata_y
-
 testdata <- data.table(predict(dummies, newdata = testdata))
-rm(traindata_y)
+
+traindata <- sapply(traindata, as.numeric)
+
+testdata <- sapply(testdata, as.numeric)
 
 
-fwrite(traindata,'./project/volume/data/interim/train.csv')
+dtrain <- xgb.DMatrix(traindata,
+                      label = traindata_y,
+                      missing = NA)
 
-fwrite(testdata,'./project/volume/data/interim/test.csv')
+dtest <- xgb.DMatrix(testdata,
+                     missing = NA)
+
+
+
+xgb.DMatrix.save(dtrain,'project/volume/data/interim/train.data')
+
+xgb.DMatrix.save(dtest,'project/volume/data/interim/test.data')
