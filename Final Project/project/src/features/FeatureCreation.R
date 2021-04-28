@@ -40,35 +40,40 @@ train.y <- train$variable
 
 train[,variable := NULL]
 
-
+# Bind test and train data
 
 totaldata <- rbind(train,testemb)
+
+# Perform PCA
 
 totaldata.pca <- prcomp(totaldata)
 
 
 pca.dt <- data.table(totaldata.pca$x)
 
+# Separate test and train data
+
 test <- pca.dt[(nrow(train)+1):nrow(pca.dt)]
 
 train <- pca.dt[1:nrow(train)]
 
+# Bind subreddits to train 
+
+train <- cbind(train,train.y)
+
+# Save data 
+
+fwrite(train,file = "project/volume/data/interim/trainpca")
 
 
-train_dt <- data.table(train.tsne$Y)
-
-
-
-
-train_pca <- data.table(train.tsne$Y)
-
-test_pca <- data.table(test.tsne$Y)
+fwrite(test,file = "project/volume/data/interim/testpca")
 
 
 
 
 
-biplot(p)
 
 
-p$center
+
+
+
